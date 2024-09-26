@@ -8,7 +8,7 @@ data class CreateTaskDto(
 )
 
 
-fun CreateTaskDto.toDomain(): Task {
+fun CreateTaskDto.toEntity(): Task {
     return Task(
         description = this.description,
         isDone = this.isDone

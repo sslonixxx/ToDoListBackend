@@ -1,13 +1,9 @@
-
 package com.example.demo.service
 
-import com.example.demo.dto.TaskDto
-import com.example.demo.dto.CreateTaskDto
-import com.example.demo.dto.toDomain
-import com.example.demo.dto.toDto
+import com.example.demo.dto.*
+import com.example.demo.repository.TaskRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.example.demo.repository.TaskRepository
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.lang.RuntimeException
@@ -16,21 +12,33 @@ import java.lang.RuntimeException
 class TaskService(private val taskRepository: TaskRepository) {
 
     fun saveTask(createTaskDto: CreateTaskDto) {
-        val task = createTaskDto.toDomain()
+        val task = createTaskDto.toEntity()
         taskRepository.save(task)
     }
+
     fun saveMultipleTasks(tasks: List<CreateTaskDto>) {
-        val taskEntities = tasks.map { it.toDomain() }
+        if (tasks.isEmpty()) {
+            throw IllegalArgumentException("Task list cannot be empty")
+        }
+        val taskEntities = tasks.map { it.toEntity() }
         taskRepository.saveAll(taskEntities)
     }
+
     fun uploadTasksFromFile(file: MultipartFile) {
 
-        taskRepository.deleteAll()
-
         val objectMapper = jacksonObjectMapper()
-        val tasks: List<CreateTaskDto> = objectMapper.readValue(file.inputStream)
+        val tasks: List<CreateTaskDto> = try {
+            objectMapper.readValue(file.inputStream)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Failed to parse tasks from file")
+        }
 
-        val taskEntities = tasks.map { it.toDomain() }
+        if (tasks.isEmpty()) {
+            throw IllegalArgumentException("File contains no tasks")
+        }
+
+        taskRepository.deleteAll()
+        val taskEntities = tasks.map { it.toEntity() }
         taskRepository.saveAll(taskEntities)
     }
 
@@ -39,6 +47,10 @@ class TaskService(private val taskRepository: TaskRepository) {
     }
 
     fun updateTaskDescription(id: Long, description: String) {
+        if (description.isBlank()) {
+            throw IllegalArgumentException("Description cannot be empty")
+        }
+
         val task = taskRepository.findById(id).orElseThrow { RuntimeException("Task not found") }
         task.description = description
         taskRepository.save(task)
