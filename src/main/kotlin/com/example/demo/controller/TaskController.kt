@@ -2,6 +2,8 @@ package com.example.demo.controller
 
 import com.example.demo.dto.CreateTaskDto
 import com.example.demo.dto.TaskDto
+import com.example.demo.dto.UpdateDescriptionDto
+import com.example.demo.dto.UpdateStatusDto
 import com.example.demo.service.TaskService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -13,14 +15,21 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 class TaskController(private val taskService: TaskService) {
 
     @PostMapping("/create")
-    fun createTask(@RequestBody createTaskDto: CreateTaskDto): ResponseEntity<String> {
+    fun createTask(@RequestBody createTaskDto: CreateTaskDto): ResponseEntity<TaskDto> {
         return try {
-            taskService.saveTask(createTaskDto)
-            ResponseEntity.ok("Task created successfully")
+            val createdTask = taskService.saveTask(createTaskDto)
+            ResponseEntity.ok(createdTask) // Возвращаем TaskDto с сгенерированным ID
         } catch (e: IllegalArgumentException) {
-            ResponseEntity.badRequest().body(e.message)
+            ResponseEntity.badRequest().body(null)
         }
     }
+
+    @GetMapping
+    fun getAllTasks(): ResponseEntity<List<TaskDto>> {
+        val tasks = taskService.getAllTasks()
+        return ResponseEntity.ok(tasks)
+    }
+
 
     @PostMapping("/create/multiple")
     fun createMultipleTasks(@RequestBody tasks: List<CreateTaskDto>): ResponseEntity<String> {
@@ -43,9 +52,12 @@ class TaskController(private val taskService: TaskService) {
     }
 
     @PutMapping("/{id}/description")
-    fun updateTaskDescription(@PathVariable id: Long, @RequestBody description: String): ResponseEntity<String> {
+    fun updateTaskDescription(
+        @PathVariable id: Long,
+        @RequestBody updateDescriptionDto: UpdateDescriptionDto
+    ): ResponseEntity<String> {
         return try {
-            taskService.updateTaskDescription(id, description)
+            taskService.updateTaskDescription(id, updateDescriptionDto.description)
             ResponseEntity.ok("Task description updated successfully")
         } catch (e: IllegalArgumentException) {
             ResponseEntity.badRequest().body(e.message)
@@ -55,9 +67,12 @@ class TaskController(private val taskService: TaskService) {
     }
 
     @PutMapping("/{id}/status")
-    fun updateTaskStatus(@PathVariable id: Long, @RequestBody isDone: Boolean): ResponseEntity<String> {
+    fun updateTaskStatus(
+        @PathVariable id: Long,
+        @RequestBody updateStatusDto: UpdateStatusDto
+    ): ResponseEntity<String> {
         return try {
-            taskService.updateTaskStatus(id, isDone)
+            taskService.updateTaskStatus(id, updateStatusDto.isDone)
             ResponseEntity.ok("Task status updated successfully")
         } catch (e: RuntimeException) {
             ResponseEntity.badRequest().body(e.message)

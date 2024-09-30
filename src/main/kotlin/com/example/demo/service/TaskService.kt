@@ -11,15 +11,18 @@ import java.lang.RuntimeException
 @Service
 class TaskService(private val taskRepository: TaskRepository) {
 
-    fun saveTask(createTaskDto: CreateTaskDto) {
-        val task = createTaskDto.toEntity()
-        taskRepository.save(task)
-    }
+fun saveTask(createTaskDto: CreateTaskDto): TaskDto {
+    val task = createTaskDto.toEntity()
+    val savedTask = taskRepository.save(task)
+    return savedTask.toDto()
+}
+
 
     fun saveMultipleTasks(tasks: List<CreateTaskDto>) {
         if (tasks.isEmpty()) {
             throw IllegalArgumentException("Task list cannot be empty")
         }
+        taskRepository.deleteAll()
         val taskEntities = tasks.map { it.toEntity() }
         taskRepository.saveAll(taskEntities)
     }
